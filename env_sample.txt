@@ -1,0 +1,2 @@
+APIFY_API_TOKEN=<your_apify_api_token>
+CUSTOMGPT_API_KEY=<your_customgpt_api_key>
