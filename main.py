@@ -53,7 +53,7 @@ for idx, doc in enumerate(docs):
     # Create a document for each page content
     file_name = f"document_{idx}.doc"
     file_content = doc.page_content
-
+    file_metadata = doc.metadata
     # Create a file object
     file_obj = File(file_name=file_name, payload=file_content)
 
@@ -63,22 +63,42 @@ for idx, doc in enumerate(docs):
     # Check the status of the uploaded file
     print(f"File {file_name} uploaded successfully!")
 
-while True:
-    # GET project details
-    get_project = CustomGPT.Project.get(project_id=project_id)
-    project_data = get_project.parsed
+    # Get the page id of the uploaded file
+    page_id = add_source.parsed.data.pages[0].id
 
-    # Check if 'is_chat_active' is True
-    is_chat_active = project_data.data.is_chat_active
-    print(f"ChatBot Active Status: {is_chat_active}")
+    # Update the metadata of the uploaded file
+    update_metadata = CustomGPT.PageMetadata.update(
+        project_id, page_id, url=file_metadata["source"]
+    )
+    # Check the status of the metadata update
+    print(f"Metadata updated for {file_name}!")
 
-    # Break the loop if chatbot is active
-    if is_chat_active:
-        print("Chatbot is now active!")
-        break
 
-    # Sleep for a few seconds before checking again
-    time.sleep(5)
+# GET project details
+page_n = 1
+all_pages_indexed = False  # Track if all pages are indexed
+
+while not all_pages_indexed:
+    pages_response = CustomGPT.Page.get(project_id=project_id, page=page_n)
+    pages_data = pages_response.parsed.data.pages
+    pages = pages_data.data
+    all_pages_indexed = True  # Assume all pages are indexed unless we find a queued one
+
+    for page in pages:
+        print(f"{page.filename}: {page.index_status}")
+        if page.index_status == "queued":
+            all_pages_indexed = (
+                False  # If any page is still queued, not all are indexed
+            )
+
+    # If there's a next page, move to the next one, otherwise stop.
+    if pages_data.next_page_url:
+        page_n += 1
+    else:
+        # If we've processed all pages but some are still queued, keep looping.
+        if not all_pages_indexed:
+            page_n = 1  # Start from the first page again
+    time.sleep(5)  # Wait for 5 seconds before checking the next page
 
 # Create a conversation before sending a message to the chat bot
 project_conversataion = CustomGPT.Conversation.create(
