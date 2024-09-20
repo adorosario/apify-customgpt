@@ -7,11 +7,11 @@ from langchain_core.documents import Document
 from langchain_community.utilities import ApifyWrapper
 from customgpt_client import CustomGPT
 from customgpt_client.types import File
+from requests.exceptions import HTTPError
 
 
 # Load environment variables from .env file
 load_dotenv()
-
 
 CUSTOMGPT_API_KEY = os.getenv("CUSTOMGPT_API_KEY")
 APIFY_API_TOKEN = os.getenv("APIFY_API_TOKEN")
@@ -32,18 +32,19 @@ loader = apify.call_actor(
     ),
 )
 
-# load the documents
+# Load the documents
 docs = loader.load()
 
 # Create an instance of the CustomGPT class.
 project_name = "Example ChatBot using Apify Actors"
-
 CustomGPT.api_key = CUSTOMGPT_API_KEY
 
 project = CustomGPT.Project.create(project_name=project_name)
 
+# Check status of the project if the chatbot is active
+if project.status_code != 201:
+    raise HTTPError(f"Failed to create project. Status code: {project.status_code}")
 
-# Check status of the project if chat bot is active
 data = project.parsed.data
 
 # Get project id from response for created project
@@ -60,7 +61,12 @@ for idx, doc in enumerate(docs):
     # Upload the document to the project
     add_source = CustomGPT.Source.create(project_id=project_id, file=file_obj)
 
-    # Check the status of the uploaded file
+    # Check if the file was uploaded successfully
+    if add_source.status_code != 201:
+        raise HTTPError(
+            f"Failed to upload file {file_name}. Status code: {add_source.status_code}"
+        )
+
     print(f"File {file_name} uploaded successfully!")
 
     # Get the page id of the uploaded file
@@ -70,7 +76,13 @@ for idx, doc in enumerate(docs):
     update_metadata = CustomGPT.PageMetadata.update(
         project_id, page_id, url=file_metadata["source"]
     )
+
     # Check the status of the metadata update
+    if update_metadata.status_code != 200:
+        raise HTTPError(
+            f"Failed to update metadata for {file_name}. Status code: {update_metadata.status_code}"
+        )
+
     print(f"Metadata updated for {file_name}!")
 
 
@@ -80,6 +92,13 @@ all_pages_indexed = False  # Track if all pages are indexed
 
 while not all_pages_indexed:
     pages_response = CustomGPT.Page.get(project_id=project_id, page=page_n)
+
+    # Check if the get request was successful
+    if pages_response.status_code != 200:
+        raise HTTPError(
+            f"Failed to retrieve pages. Status code: {pages_response.status_code}"
+        )
+
     pages_data = pages_response.parsed.data.pages
     pages = pages_data.data
     all_pages_indexed = True  # Assume all pages are indexed unless we find a queued one
@@ -100,22 +119,32 @@ while not all_pages_indexed:
             page_n = 1  # Start from the first page again
     time.sleep(5)  # Wait for 5 seconds before checking the next page
 
-# Create a conversation before sending a message to the chat bot
-project_conversataion = CustomGPT.Conversation.create(
+# Create a conversation before sending a message to the chatbot
+project_conversation = CustomGPT.Conversation.create(
     project_id=project_id, name="My First Conversation"
 )
-project_data = project_conversataion.parsed
+
+# Check if the conversation creation was successful
+if project_conversation.status_code != 201:
+    raise HTTPError(
+        f"Failed to create conversation. Status code: {project_conversation.status_code}"
+    )
+
+project_data = project_conversation.parsed
 
 # Get the session id for the conversation
 session_id = project_data.data.session_id
 
-# pass in your question to prompt
+# Pass in your question to prompt
 prompt = "How do I run an apify actor?"
 
 response = CustomGPT.Conversation.send(
     project_id=project_id, session_id=session_id, prompt=prompt, stream=False
 )
 
+# Check if the conversation response was successful
+if response.status_code != 200:
+    raise HTTPError(f"Failed to send prompt. Status code: {response.status_code}")
 
 # Format and display the result in a more readable way
 formatted_response = f"""
