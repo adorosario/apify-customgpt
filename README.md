@@ -79,21 +79,19 @@ docs = loader.load()
 
 This part creates a new project using a file as input. It may involve:
 
-- Reading the contents of the file
 - Sending a request to the API to create a new project
 - Handling the response and returning the project details
+- Create a source for each file crawled
 
 Example:
 
 ```python
-file_content = "\n\n".join([doc.page_content for doc in docs])
-
+# Create an instance of the CustomGPT class.
 project_name = "Example ChatBot using Apify Actors"
 
 CustomGPT.api_key = CUSTOMGPT_API_KEY
 
-project = CustomGPT.Project.create(
-    project_name=project_name, file=File(payload=file_content, file_name="apify.doc")
+project = CustomGPT.Project.create(project_name=project_name)
 )
 
 data = project.parsed.data
@@ -102,15 +100,41 @@ data = project.parsed.data
 project_id = data.id
 ```
 
+```python
+for idx, doc in enumerate(docs):
+    # Create a document for each page content
+    file_name = f"document_{idx}.doc"
+    file_content = doc.page_content
+
+    # Create a file object
+    file_obj = File(file_name=file_name, payload=file_content)
+
+    # Upload the document to the project
+    add_source = CustomGPT.Source.create(project_id=project_id, file=file_obj)
+
+    # Check the status of the uploaded file
+    print(f"File {file_name} uploaded successfully!")
+```
+
 To check the status of the bot you just created:
 
 ```python
-get_project = CustomGPT.Project.get(project_id=project_id)
-project_data = get_project.parsed
-is_chat_active = project_data.data.is_chat_active
+while True:
+    # GET project details
+    get_project = CustomGPT.Project.get(project_id=project_id)
+    project_data = get_project.parsed
 
-# ChatBot Status
-print(is_chat_active)
+    # Check if 'is_chat_active' is True
+    is_chat_active = project_data.data.is_chat_active
+    print(f"ChatBot Active Status: {is_chat_active}")
+
+    # Break the loop if chatbot is active
+    if is_chat_active:
+        print("Chatbot is now active!")
+        break
+
+    # Sleep for a few seconds before checking again
+    time.sleep(5)
 ```
 
 ### Create Conversation
