@@ -88,25 +88,16 @@ response = CustomGPT.Conversation.send(
     project_id=project_id, session_id=session_id, prompt=prompt, stream=False
 )
 
-### Format and display the result in a more readable way
-response_content = response.content.decode("utf-8")
-response_json = json.loads(response_content)
-
-# Extract the query and response from the parsed JSON
-user_query = response_json.get("data", {}).get("user_query", "No query found")
-openai_response = response_json.get("data", {}).get(
-    "openai_response", "No response found"
-)
 
 # Format and display the result in a more readable way
 formatted_response = f"""
 Query Sent:
 ------------
-{user_query}
+{response.parsed.data.user_query}
 
 Response Received:
 ------------------
-{openai_response}
+{response.parsed.data.openai_response}
 """
 
 # Print the formatted response
