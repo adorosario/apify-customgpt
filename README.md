@@ -1,4 +1,4 @@
-# apify-customgptai
+# apify-customgpt
 
 ## Table of Contents
 1. [Environment Setup](#environment-setup)
@@ -21,13 +21,13 @@ CUSTOMGPT_API_KEY=<your_customgpt_api_key>
 Replace `<your_apify_api_token>` with your actual Apify API token and `<your_customgpt_api_key>` with your CustomGPT API key.
 
 ## Usage
-	1.	Clone the Repository:
+1. Clone the Repository:
    Clone the repository to your local 
    ```cmd
-      git clone 
+      git clone https://github.com/adorosario/apify-customgpt.git
    ```
 
-	2.	Install Requirements:
+2. Install Requirements:
    Navigate to the project directory and install the necessary dependencies:
    ```cmd
       cd apify-customgpt
