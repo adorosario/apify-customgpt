@@ -2,12 +2,14 @@
 
 ## Table of Contents
 1. [Environment Setup](#environment-setup)
-2. [Code Explanation](#code-explanation)
+2. [Usage](#Usage)
+3. [Code Explanation](#code-explanation)
+   - [Setting up the environment variables](#Setting-up-the-environment-variables)
    - [Loader](#loader)
    - [Create Project from File](#create-project-from-file)
    - [Create Conversation](#create-conversation)
    - [Send a Message](#send-a-message)
-3. [Example Usage](#example-usage)
+5. [Example Usage](#example-usage)
 
 ## Environment Setup
 
