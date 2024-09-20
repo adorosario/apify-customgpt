@@ -55,17 +55,22 @@ data = project.parsed.data
 project_id = data.id
 
 
-time.sleep(30)  # Wait for 30 seconds before checking the status
+while True:
+    # GET project details
+    get_project = CustomGPT.Project.get(project_id=project_id)
+    project_data = get_project.parsed
 
-# Check if chat bot is active using `is_chat_active` flag in project detail response
-# GET project details
-get_project = CustomGPT.Project.get(project_id=project_id)
-project_data = get_project.parsed
-is_chat_active = project_data.data.is_chat_active
+    # Check if 'is_chat_active' is True
+    is_chat_active = project_data.data.is_chat_active
+    print(f"ChatBot Active Status: {is_chat_active}")
 
-# ChatBot Status
-print(is_chat_active)
+    # Break the loop if chatbot is active
+    if is_chat_active:
+        print("Chatbot is now active!")
+        break
 
+    # Sleep for a few seconds before checking again
+    time.sleep(5)
 
 # Create a conversation before sending a message to the chat bot
 project_conversataion = CustomGPT.Conversation.create(
