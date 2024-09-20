@@ -35,17 +35,12 @@ loader = apify.call_actor(
 # load the documents
 docs = loader.load()
 
-# load the page content
-file_content = "\n\n".join([doc.page_content for doc in docs])
-
 # Create an instance of the CustomGPT class.
 project_name = "Example ChatBot using Apify Actors"
 
 CustomGPT.api_key = CUSTOMGPT_API_KEY
 
-project = CustomGPT.Project.create(
-    project_name=project_name, file=File(payload=file_content, file_name="apify.doc")
-)
+project = CustomGPT.Project.create(project_name=project_name)
 
 
 # Check status of the project if chat bot is active
@@ -54,6 +49,19 @@ data = project.parsed.data
 # Get project id from response for created project
 project_id = data.id
 
+for idx, doc in enumerate(docs):
+    # Create a document for each page content
+    file_name = f"document_{idx}.txt"
+    file_content = doc.page_content
+
+    # Create a file object
+    file_obj = File(file_name=file_name, payload=file_content)
+
+    # Upload the document to the project
+    add_source = CustomGPT.Source.create(project_id=project_id, file=file_obj)
+
+    # Check the status of the uploaded file
+    print(f"File {file_name} uploaded successfully!")
 
 while True:
     # GET project details
