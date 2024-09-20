@@ -51,7 +51,7 @@ project_id = data.id
 
 for idx, doc in enumerate(docs):
     # Create a document for each page content
-    file_name = f"document_{idx}.txt"
+    file_name = f"document_{idx}.doc"
     file_content = doc.page_content
 
     # Create a file object
