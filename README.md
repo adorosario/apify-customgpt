@@ -1,13 +1,15 @@
-# apify-customgptai
+# apify-customgpt
 
 ## Table of Contents
 1. [Environment Setup](#environment-setup)
-2. [Code Explanation](#code-explanation)
+2. [Usage](#Usage)
+3. [Code Explanation](#code-explanation)
+   - [Setting up the environment variables](#Setting-up-the-environment-variables)
    - [Loader](#loader)
    - [Create Project from File](#create-project-from-file)
    - [Create Conversation](#create-conversation)
    - [Send a Message](#send-a-message)
-3. [Example Usage](#example-usage)
+5. [Example Usage](#example-usage)
 
 ## Environment Setup
 
@@ -20,6 +22,19 @@ CUSTOMGPT_API_KEY=<your_customgpt_api_key>
 
 Replace `<your_apify_api_token>` with your actual Apify API token and `<your_customgpt_api_key>` with your CustomGPT API key.
 
+## Usage
+1. Clone the Repository:
+   Clone the repository to your local 
+   ```cmd
+      git clone https://github.com/adorosario/apify-customgpt.git
+   ```
+
+2. Install Requirements:
+   Navigate to the project directory and install the necessary dependencies:
+   ```cmd
+      cd apify-customgpt
+      pip install -r requirements.txt
+   ```
 ## Code Explanation
 
 ### Setting up the environment variables
