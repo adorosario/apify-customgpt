@@ -35,6 +35,11 @@ Replace `<your_apify_api_token>` with your actual Apify API token and `<your_cus
       cd apify-customgpt
       pip install -r requirements.txt
    ```
+3. Run This Command:
+    ```cmd
+    python main.py --starting-url <URL> --prompt <prompt>
+    ```
+    
 ## Code Explanation
 
 ### Setting up the environment variables
