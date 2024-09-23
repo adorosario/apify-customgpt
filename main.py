@@ -34,7 +34,6 @@ loader = apify.call_actor(
 
 # Load the documents
 docs = loader.load()
-
 # Create an instance of the CustomGPT class.
 project_name = "Example ChatBot using Apify Actors"
 CustomGPT.api_key = CUSTOMGPT_API_KEY
@@ -101,23 +100,25 @@ while not all_pages_indexed:
 
     pages_data = pages_response.parsed.data.pages
     pages = pages_data.data
-    all_pages_indexed = True  # Assume all pages are indexed unless we find a queued one
+    page_n_completed = (
+        True  # Assume the page we are currently on is indexed unless we find it queued
+    )
 
     for page in pages:
         print(f"{page.filename}: {page.index_status}")
         if page.index_status == "queued":
-            all_pages_indexed = (
-                False  # If any page is still queued, not all are indexed
+            time.sleep(5)
+            page_n_completed = (
+                False  # If the page is still queued, break out of the loop
             )
+            break
 
-    # If there's a next page, move to the next one, otherwise stop.
-    if pages_data.next_page_url:
-        page_n += 1
-    else:
-        # If we've processed all pages but some are still queued, keep looping.
-        if not all_pages_indexed:
-            page_n = 1  # Start from the first page again
-    time.sleep(5)  # Wait for 5 seconds before checking the next page
+    # If the current page is queued, we try again, otherwise we move to the next page.
+    if page_n_completed:
+        if pages_data.next_page_url:
+            page_n += 1
+        else:
+            all_pages_indexed = True
 
 # Create a conversation before sending a message to the chatbot
 project_conversation = CustomGPT.Conversation.create(
