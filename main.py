@@ -54,6 +54,12 @@ for idx, doc in enumerate(docs):
     file_name = f"document_{idx}.doc"
     file_content = doc.page_content
     file_metadata = doc.metadata
+
+    # Check if the document content is empty or contains only whitespace
+    if not file_content.strip():
+        print(f"Skipping {file_name} because it is empty.")
+        continue
+
     # Create a file object
     file_obj = File(file_name=file_name, payload=file_content)
 
