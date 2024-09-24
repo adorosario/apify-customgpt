@@ -21,7 +21,7 @@ This guide provides instructions on how to build and run the Docker container fo
    APIFY_API_TOKEN=your_apify_token
    CUSTOMGPT_API_KEY=your_customgpt_key
    ```
-   Replace `your_apify_token` and `your_customgpt_key` with your actual API tokens.
+   Replace [APIFY_API_TOKEN](https://console.apify.com/account#/integrations) and [CUSTOMGPT_API_KEY](https://app.customgpt.ai/profile#api) with your actual API tokens.
 
 3. Build the Docker image:
    ```
@@ -35,7 +35,7 @@ This guide provides instructions on how to build and run the Docker container fo
 
 5. You will be dropped into a bash prompt inside the container. From here, you can run your Python script:
    ```
-   python main.py --starting-url https://example.com --prompt "Your prompt here"
+   python main.py --starting-url https://docs.apify.com/api/v2 --prompt "How to find the API token?"
    ```
 
 ## Troubleshooting

@@ -2,6 +2,9 @@ import json
 import os
 import time
 import argparse
+from urllib.parse import urlparse
+import re
+from datetime import datetime
 
 from dotenv import load_dotenv
 from langchain_core.documents import Document
@@ -10,116 +13,91 @@ from customgpt_client import CustomGPT
 from customgpt_client.types import File
 from requests.exceptions import HTTPError
 
-def main(starting_url, user_prompt):
-    # Load environment variables from .env file
-    load_dotenv()
+def generate_project_name(wp_url):
+    # Extract domain name from the URL
+    domain = urlparse(wp_url).netloc
+    
+    # Remove 'www.' if present
+    domain = re.sub(r'^www\.', '', domain)
+    
+    # Generate timestamp
+    timestamp = datetime.now().strftime("%Y%m%d:%H%M%S")
+    
+    # Combine domain and timestamp
+    project_name = f"{domain} - {timestamp}"
+    
+    return project_name
 
-    # Create an instance of the ApifyWrapper class.
-    apify = ApifyWrapper(apify_api_token=os.getenv("APIFY_API_TOKEN"))
-
-    # Call actor to scrape the website content.
-    loader = apify.call_actor(
-        actor_id="apify/website-content-crawler",
-        run_input={"startUrls": [{"url": starting_url}], "maxCrawlDepth": 20},
-        dataset_mapping_function=lambda item: Document(
-            page_content=item["text"] or "",
-            metadata={
-                "url": item["url"],
-                "title": item.get("metadata", {}).get("title", ""),
-                "description": item.get("metadata", {}).get("description", ""),
-            }
-        ),
-    )
-
-    # Load the documents
-    docs = loader.load()
-
-    # Create the CustomGPT project.
-    project_name = f"ChatBot for {starting_url}"
-    CustomGPT.api_key = os.getenv("CUSTOMGPT_API_KEY")
+def transfer_to_customgpt(project_name, docs, api_key):
+    CustomGPT.api_key = api_key
+    
     project = CustomGPT.Project.create(project_name=project_name)
-
-    # Check status of the project if the chatbot is active
     if project.status_code != 201:
-        raise HTTPError(f"Failed to create project. Status code: {project.status_code}")
-
-    # Get project id from response for created project
+        print(f"Failed to create project. Status code: {project.status_code}")
+        return None
+    
     project_id = project.parsed.data.id
-
+    
     for idx, doc in enumerate(docs):
-        # Create a document for each page content
         file_name = f"document_{idx}.doc"
         file_content = doc.page_content
         file_metadata = doc.metadata
 
-        # Check if the document content is empty or contains only whitespace
-        if not file_content.strip():
-            print(f"Skipping {file_name} because it is empty.")
-            continue
-
-        # Create a file object
         file_obj = File(file_name=file_name, payload=file_content)
-
-        # Upload the document to the project
+        
         add_source = CustomGPT.Source.create(project_id=project_id, file=file_obj)
-
-        # Check if the file was uploaded successfully
         if add_source.status_code != 201:
-            raise HTTPError(
-                f"Failed to upload file {file_name}. Status code: {add_source.status_code}"
-            )
-
-        print(f"File {file_name} uploaded successfully!")
-
-        # Get the page id of the uploaded file
+            print(f"Failed to upload file {file_name}. Status code: {add_source.status_code}")
+            continue
+        
         page_id = add_source.parsed.data.pages[0].id
-
-        # Update the metadata of the uploaded file
         update_metadata = CustomGPT.PageMetadata.update(
-            project_id, page_id, url=file_metadata["source"], title=file_metadata["title"], description=file_metadata["description"] 
+            project_id, 
+            page_id, 
+            url=file_metadata["url"],
+            title=file_metadata["title"]
         )
-
-        # Check the status of the metadata update
         if update_metadata.status_code != 200:
-            raise HTTPError(
-                f"Failed to update metadata for {file_name}. Status code: {update_metadata.status_code}"
-            )
+            print(f"""Failed to update metadata for project_id={project_id}, page_id={page_id}, url={file_metadata["url"]}, title={file_metadata["title"]}. Status code: {update_metadata.status_code}. response={update_metadata}""")
+    
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Data transferred to CustomGPT project: {project_name}")
+    return project_id
 
-        print(f"Metadata updated for {file_name}!")
-
-    # GET project details
-    page_n = 1
-    all_pages_indexed = False  # Track if all pages are indexed
-
-    while not all_pages_indexed:
-        pages_response = CustomGPT.Page.get(project_id=project_id, page=page_n)
-
-        # Check if the get request was successful
-        if pages_response.status_code != 200:
-            raise HTTPError(
-                f"Failed to retrieve pages. Status code: {pages_response.status_code}"
-            )
-
-        pages_data = pages_response.parsed.data.pages
-        pages = pages_data.data
-        page_n_completed = True  # Assume the page we are currently on is indexed unless we find it queued
-
-        for page in pages:
-            print(f"{page.filename}: {page.index_status}")
-            if page.index_status == "queued":
+def check_indexing_status(project_id, api_key):
+    CustomGPT.api_key = api_key
+    page_n = 1 # Pagination
+    all_documents_indexed = False
+    
+    while not all_documents_indexed:
+        documents_response = CustomGPT.Page.get(project_id=project_id, page=page_n)
+        if documents_response.status_code != 200:
+            print(f"Failed to retrieve documents. Status code: {documents_response.status_code}")
+            return False
+        
+        documents_data = documents_response.parsed.data.pages
+        documents = documents_data.data
+        
+        page_n_completed = True
+        for doc in documents:
+            if doc.index_status == "queued":
+                print(f"Documents queued in indexing queue -- sleeping 5 seconds ...")
                 time.sleep(5)
-                page_n_completed = (
-                    False  # If the page is still queued, break out of the loop
-                )
+                page_n_completed = False
                 break
-
-        # If the current page is queued, we try again, otherwise we move to the next page.
+        
+        # At this point, all documents found in paginated responses until page_n have been indexed
         if page_n_completed:
-            if pages_data.next_page_url:
+            if documents_data.next_page_url:
                 page_n += 1
             else:
-                all_pages_indexed = True
+                all_documents_indexed = True 
+    
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] All documents indexed successfully ...")
+    return True
 
+def query_customgpt(project_id, prompt, api_key):
+    CustomGPT.api_key = api_key
+    
     # Create a conversation before sending a message to the chatbot
     project_conversation = CustomGPT.Conversation.create(
         project_id=project_id, name="My First Conversation"
@@ -131,13 +109,8 @@ def main(starting_url, user_prompt):
             f"Failed to create conversation. Status code: {project_conversation.status_code}"
         )
 
-    project_data = project_conversation.parsed
-
     # Get the session id for the conversation
-    session_id = project_data.data.session_id
-
-    # Pass in your question to prompt
-    prompt = user_prompt
+    session_id = project_conversation.parsed.data.session_id
 
     response = CustomGPT.Conversation.send(
         project_id=project_id, session_id=session_id, prompt=prompt, stream=False
@@ -145,22 +118,62 @@ def main(starting_url, user_prompt):
 
     # Check if the conversation response was successful
     if response.status_code != 200:
-        raise HTTPError(f"Failed to send prompt. Status code: {response.status_code}")
+        raise HTTPError(f"Failed to send prompt. Status code: {response.status_code}, response={response}")
 
     # Format and display the result in a more readable way
-    formatted_response = f"""
-    Query Sent:
-    ------------
-    {response.parsed.data.user_query}
+    print(f"""
+    user: {response.parsed.data.user_query}
+    assistant: {response.parsed.data.openai_response}
+    """)
 
-    Response Received:
-    ------------------
-    {response.parsed.data.openai_response}
-    """
+def main(starting_url, user_prompt):
+    # Load environment variables from .env file
+    load_dotenv()
 
-    # Print the formatted response
-    print(formatted_response)
+    # Create an instance of the ApifyWrapper class.
+    apify = ApifyWrapper(apify_api_token=os.getenv("APIFY_API_TOKEN"))
 
+    # Call actor to scrape the website content.
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting apify actor to scrape: {starting_url} ...")
+    loader = apify.call_actor(
+        actor_id="apify/website-content-crawler",
+        run_input={"startUrls": [{"url": starting_url}], "maxCrawlDepth": 20},
+        dataset_mapping_function=lambda item: Document(
+            page_content=item["text"] or "",
+            metadata={
+                "url": item["url"],
+                "title": item.get("metadata", {}).get("title", ""),
+                "description": item.get("metadata", {}).get("description", "")
+            }
+        ),
+    )
+
+    # Load the documents
+    docs = loader.load()
+
+    # Create the CustomGPT.ai project and upload all the documents to it. 
+    CUSTOMGPT_API_KEY = os.getenv("CUSTOMGPT_API_KEY")
+    total_documents = len(docs)
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Beginning sync of {total_documents} documents to CustomGPT ...")
+    customgpt_project_name = generate_project_name(starting_url)
+    project_id = transfer_to_customgpt(customgpt_project_name, docs, CUSTOMGPT_API_KEY)
+
+    if project_id:
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] All documents uploaded. Checking CustomGPT indexing status ...")
+        indexing_successful = check_indexing_status(project_id, CUSTOMGPT_API_KEY)
+        if indexing_successful:
+            print(f"""[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ### :tada: Data Successfully Synced!
+            
+            Your Apify scraped content has been successfully synced to CustomGPT and indexed.
+            
+            You can now also chat with your data here: https://app.customgpt.ai/projects/{project_id}/ask-me-anything
+            """)
+    else:
+        print("No data fetched. Please check your inputs and try again.")
+
+    # Let's query the newly created CustomGPT project
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Trying the prompt via API ...")
+    query_customgpt(project_id=project_id, prompt=user_prompt, api_key=CUSTOMGPT_API_KEY)
 
 if __name__ == "__main__":
     # Create an argument parser to accept --starting-url and --prompt arguments
