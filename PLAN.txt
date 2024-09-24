@@ -1,0 +1,8 @@
+Fix code : **WAITING ON MAINTAINANCE**
+Fix README along lines of the blog post
+Add image to README
+Add Loom video.
+
+NICE TO HAVE: Streamlit app
+
+python main.py --starting-url https://docs.customgpt.ai --prompt "How do I start a streaming conversation from the API?"

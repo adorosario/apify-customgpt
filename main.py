@@ -10,42 +10,41 @@ from customgpt_client import CustomGPT
 from customgpt_client.types import File
 from requests.exceptions import HTTPError
 
-
 def main(starting_url, user_prompt):
     # Load environment variables from .env file
     load_dotenv()
 
-    CUSTOMGPT_API_KEY = os.getenv("CUSTOMGPT_API_KEY")
-    APIFY_API_TOKEN = os.getenv("APIFY_API_TOKEN")
-
     # Create an instance of the ApifyWrapper class.
-    apify = ApifyWrapper(apify_api_token=APIFY_API_TOKEN)
+    apify = ApifyWrapper(apify_api_token=os.getenv("APIFY_API_TOKEN"))
 
     # Call actor to scrape the website content.
     loader = apify.call_actor(
         actor_id="apify/website-content-crawler",
         run_input={"startUrls": [{"url": starting_url}], "maxCrawlDepth": 20},
         dataset_mapping_function=lambda item: Document(
-            page_content=item["text"] or "", metadata={"source": item["url"]}
+            page_content=item["text"] or "",
+            metadata={
+                "url": item["url"],
+                "title": item.get("metadata", {}).get("title", ""),
+                "description": item.get("metadata", {}).get("description", ""),
+            }
         ),
     )
 
     # Load the documents
     docs = loader.load()
-    # Create an instance of the CustomGPT class.
-    project_name = f"ChatBot for {starting_url}"
-    CustomGPT.api_key = CUSTOMGPT_API_KEY
 
+    # Create the CustomGPT project.
+    project_name = f"ChatBot for {starting_url}"
+    CustomGPT.api_key = os.getenv("CUSTOMGPT_API_KEY")
     project = CustomGPT.Project.create(project_name=project_name)
 
     # Check status of the project if the chatbot is active
     if project.status_code != 201:
         raise HTTPError(f"Failed to create project. Status code: {project.status_code}")
 
-    data = project.parsed.data
-
     # Get project id from response for created project
-    project_id = data.id
+    project_id = project.parsed.data.id
 
     for idx, doc in enumerate(docs):
         # Create a document for each page content
@@ -77,7 +76,7 @@ def main(starting_url, user_prompt):
 
         # Update the metadata of the uploaded file
         update_metadata = CustomGPT.PageMetadata.update(
-            project_id, page_id, url=file_metadata["source"]
+            project_id, page_id, url=file_metadata["source"], title=file_metadata["title"], description=file_metadata["description"] 
         )
 
         # Check the status of the metadata update
@@ -166,7 +165,7 @@ def main(starting_url, user_prompt):
 if __name__ == "__main__":
     # Create an argument parser to accept --starting-url and --prompt arguments
     parser = argparse.ArgumentParser(
-        description="CLI for scraping a website and using CustomGPT"
+        description="Build an AI agent using Apify and CustomGPT"
     )
     parser.add_argument(
         "--starting-url", required=True, help="The URL to start scraping"
