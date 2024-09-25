@@ -30,7 +30,7 @@ This guide provides instructions on how to build and run the Docker container fo
 
 4. Run the container locally:
    ```
-   docker run -it --rm -v $(pwd):/app apify-customgpt
+   docker run -it -p 8501:8501 --rm -v $(pwd):/app apify-customgpt
    ```
 
 5. You will be dropped into a bash prompt inside the container. From here, you can run your Python script:

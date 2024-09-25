@@ -114,3 +114,4 @@ websockets==13.0.1
 wrapt==1.16.0
 yarl==1.11.1
 zipp==3.20.2
+streamlit
