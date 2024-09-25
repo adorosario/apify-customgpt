@@ -96,32 +96,35 @@ def check_indexing_status(project_id, api_key):
     return True
 
 # Streamlit UI
-st.set_page_config(page_title="Apify to CustomGPT Data Transfer", layout="wide")
+st.set_page_config(page_title="Apify Web Scraper to CustomGPT AI Agent Builder", layout="wide")
 
-st.title("Apify to CustomGPT Data Transfer")
-st.markdown("*Securely sync website content to CustomGPT using Apify*")
+st.title("Apify Web Scraper to CustomGPT AI Agent Builder")
+st.markdown("*Securely sync website content scraped from Apify to CustomGPT to build your AI Agent. [ [Github](https://github.com/adorosario/apify-customgpt) ]*")
 st.markdown("---")
 
 # Source Section
 st.header("Source: Apify")
-starting_url = st.text_input(
-    "Starting URL",
-    help="Enter the full URL of the website you want to scrape (e.g., https://www.example.com)"
-)
+col1, col2= st.columns(2)
 
-apify_api_token = st.text_input(
-    "Apify API Token",
-    type="password",
-    help="Enter your Apify API token. You can find this in your Apify account settings."
-)
+with col1:
+    starting_url = st.text_input(
+        "Starting URL",
+        help="Enter the full URL of the website you want to scrape (e.g., https://www.example.com)"
+    )
+
+with col2:
+    apify_api_token = st.text_input(
+        "Apify API Token",
+        type="password",
+        help="Enter your Apify API token. You can find this in your Apify account settings."
+    )
 
 # Destination Section
 st.header("Destination: CustomGPT")
 customgpt_api_key = st.text_input(
     "CustomGPT API Key",
     type="password",
-    help="Enter your CustomGPT API key. You can find this in your CustomGPT account settings."
-)
+    help="Enter your [CustomGPT API key](https://app.customgpt.ai/profile#api). You can find this in your CustomGPT account settings.")
 
 # Action Button
 if st.button("Fetch and Transfer Data", help="Click to start the data transfer process"):
