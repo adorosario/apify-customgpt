@@ -2,14 +2,17 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+[![Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://apify-to-customgpt.streamlit.app/)
 
-A powerful tool to scrape web content using Apify and create AI agents with CustomGPT, enabling you to build intelligent chatbots based on web data.
+A powerful tool to scrape web content using Apify and create AI agents with CustomGPT, enabling you to build intelligent chatbots based on web data. Now with a Streamlit interface for easier interaction!
 
 ## Table of Contents
 - [Features](#features)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
+  - [Streamlit App](#streamlit-app)
+  - [Command Line Interface](#command-line-interface)
 - [Configuration](#configuration)
 - [Code Structure](#code-structure)
 - [Contributing](#contributing)
@@ -23,8 +26,18 @@ A powerful tool to scrape web content using Apify and create AI agents with Cust
 - 🔄 Automatic transfer of scraped data to CustomGPT
 - 📊 Indexing status monitoring
 - 💬 Immediate chat functionality with the created AI agent
+- 🖥️ User-friendly Streamlit interface
 
 ![Project Screenshot](screenshot.png)
+
+## Demo Video
+
+[![Watch the video](https://cdn.loom.com/sessions/thumbnails/81de6b49b1cc495b8c764508faa38053-46614daa7d932146-full-play.gif)](https://www.loom.com/share/81de6b49b1cc495b8c764508faa38053)
+
+[Click here to watch the full demo video](https://www.loom.com/share/81de6b49b1cc495b8c764508faa38053)
+
+## How To Use It?
+We provide an easy to use [no-code hosted Streamlit app](https://apify-to-customgpt.streamlit.app/). You can also self-host the Streamlit app if you'd like.
 
 ## Prerequisites
 
@@ -49,11 +62,26 @@ Before you begin, ensure you have met the following requirements:
 
 ## Usage
 
+### Streamlit App
+
 1. Set up your environment variables by creating a `.env` file in the root directory:
    ```
    APIFY_API_TOKEN=your_apify_api_token
    CUSTOMGPT_API_KEY=your_customgpt_api_key
    ```
+
+2. Run the Streamlit app:
+   ```
+   streamlit run app.py
+   ```
+
+3. Open your web browser and go to the URL displayed in the terminal (usually `http://localhost:8501`).
+
+4. Use the web interface to enter the starting URL, and follow the on-screen instructions to scrape and transfer data.
+
+### Command Line Interface
+
+1. Set up your environment variables as described above.
 
 2. Run the script with the required arguments:
    ```
@@ -82,14 +110,9 @@ Before you begin, ensure you have met the following requirements:
 ## Code Structure
 
 - `main.py`: The main script that orchestrates the web scraping and AI agent creation process.
+- `app.py`: The Streamlit app script for the web interface.
 - `requirements.txt`: List of Python dependencies.
 - `.env`: File for storing environment variables (not included in the repository).
-
-Key functions in `main.py`:
-- `generate_project_name()`: Creates a unique project name based on the URL and timestamp.
-- `transfer_to_customgpt()`: Transfers scraped data to CustomGPT.
-- `check_indexing_status()`: Monitors the indexing status of transferred documents.
-- `query_customgpt()`: Sends a query to the created AI agent and retrieves the response.
 
 ## Contributing
 
